@@ -34,7 +34,7 @@ A aplicação sobe por padrão em `http://localhost:8080`.
 SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
 ```
 
-### 2. Validar rapidamente
+### 3. Validar rapidamente
 
 - Ping:
   - `GET http://localhost:8080/v1/ping`
@@ -42,6 +42,11 @@ SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
   - `GET http://localhost:8080/actuator/health`
   - `GET http://localhost:8080/actuator/health/liveness`
   - `GET http://localhost:8080/actuator/health/readiness`
+- Artistas:
+  - `POST http://localhost:8080/v1/artistas`
+  - `PUT http://localhost:8080/v1/artistas/{id}`
+  - `GET http://localhost:8080/v1/artistas/{id}`
+  - `GET http://localhost:8080/v1/artistas?nome=Mike&ordem=asc&pagina=0&tamanho=20`
 
 ---
 
