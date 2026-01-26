@@ -25,6 +25,15 @@ mvn spring-boot:run
 
 A aplicação sobe por padrão em `http://localhost:8080`.
 
+### 2. Banco de dados (perfis)
+
+- Padrão: profile `local` (H2 em memória)
+- Para usar PostgreSQL:
+
+```bash
+SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
+```
+
 ### 2. Validar rapidamente
 
 - Ping:
