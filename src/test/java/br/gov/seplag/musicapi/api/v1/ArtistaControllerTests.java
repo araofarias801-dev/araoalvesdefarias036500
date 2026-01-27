@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import br.gov.seplag.musicapi.repository.ArtistaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.ratelimit.enabled=false")
 @AutoConfigureMockMvc
 class ArtistaControllerTests {
 	@Autowired
@@ -31,6 +32,7 @@ class ArtistaControllerTests {
 	@Test
 	void criaEBuscaArtista() throws Exception {
 		mockMvc.perform(post("/v1/artistas")
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nome\":\"Serj Tankian\"}"))
 			.andExpect(status().isCreated())
@@ -39,7 +41,7 @@ class ArtistaControllerTests {
 
 		Long id = artistaRepository.findAll().getFirst().getId();
 
-		mockMvc.perform(get("/v1/artistas/{id}", id))
+		mockMvc.perform(get("/v1/artistas/{id}", id).with(jwt()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.id").value(id))
 			.andExpect(jsonPath("$.nome").value("Serj Tankian"));
@@ -48,14 +50,16 @@ class ArtistaControllerTests {
 	@Test
 	void listaArtistasOrdenados() throws Exception {
 		mockMvc.perform(post("/v1/artistas")
+			.with(jwt())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"nome\":\"B\"}")).andExpect(status().isCreated());
 
 		mockMvc.perform(post("/v1/artistas")
+			.with(jwt())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"nome\":\"A\"}")).andExpect(status().isCreated());
 
-		mockMvc.perform(get("/v1/artistas").param("ordem", "asc"))
+		mockMvc.perform(get("/v1/artistas").with(jwt()).param("ordem", "asc"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.content[0].nome").value("A"))
 			.andExpect(jsonPath("$.content[1].nome").value("B"));
@@ -64,14 +68,16 @@ class ArtistaControllerTests {
 	@Test
 	void filtraArtistasPorNome() throws Exception {
 		mockMvc.perform(post("/v1/artistas")
+			.with(jwt())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"nome\":\"Mike Shinoda\"}")).andExpect(status().isCreated());
 
 		mockMvc.perform(post("/v1/artistas")
+			.with(jwt())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"nome\":\"Michel Teló\"}")).andExpect(status().isCreated());
 
-		mockMvc.perform(get("/v1/artistas").param("nome", "Mike"))
+		mockMvc.perform(get("/v1/artistas").with(jwt()).param("nome", "Mike"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.content.length()").value(1))
 			.andExpect(jsonPath("$.content[0].nome").value("Mike Shinoda"));
@@ -80,14 +86,17 @@ class ArtistaControllerTests {
 	@Test
 	void paginaArtistas() throws Exception {
 		mockMvc.perform(post("/v1/artistas")
+			.with(jwt())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"nome\":\"A\"}")).andExpect(status().isCreated());
 
 		mockMvc.perform(post("/v1/artistas")
+			.with(jwt())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"nome\":\"B\"}")).andExpect(status().isCreated());
 
 		mockMvc.perform(get("/v1/artistas")
+			.with(jwt())
 			.param("ordem", "asc")
 			.param("pagina", "0")
 			.param("tamanho", "1"))
