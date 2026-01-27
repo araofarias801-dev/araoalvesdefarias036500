@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
 import br.gov.seplag.musicapi.repository.AlbumRepository;
 import br.gov.seplag.musicapi.repository.ArtistaRepository;
@@ -16,7 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.ratelimit.enabled=false")
 @AutoConfigureMockMvc
 @Transactional
 class AlbumControllerTests {
@@ -32,6 +33,7 @@ class AlbumControllerTests {
 	@Test
 	void criaEBuscaAlbum() throws Exception {
 		mockMvc.perform(post("/v1/artistas")
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nome\":\"Serj Tankian\"}"))
 			.andExpect(status().isCreated());
@@ -39,6 +41,7 @@ class AlbumControllerTests {
 		Long artistaId = artistaRepository.findAll().getFirst().getId();
 
 		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"titulo\":\"Harakiri\",\"artistaIds\":[" + artistaId + "]}"))
 			.andExpect(status().isCreated())
@@ -50,7 +53,7 @@ class AlbumControllerTests {
 
 		Long albumId = albumRepository.findAll().getFirst().getId();
 
-		mockMvc.perform(get("/v1/albuns/{id}", albumId))
+		mockMvc.perform(get("/v1/albuns/{id}", albumId).with(jwt()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.id").value(albumId))
 			.andExpect(jsonPath("$.titulo").value("Harakiri"))
@@ -60,6 +63,7 @@ class AlbumControllerTests {
 	@Test
 	void atualizaAlbum() throws Exception {
 		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"titulo\":\"Old\"}"))
 			.andExpect(status().isCreated());
@@ -67,6 +71,7 @@ class AlbumControllerTests {
 		Long albumId = albumRepository.findAll().getFirst().getId();
 
 		mockMvc.perform(put("/v1/albuns/{id}", albumId)
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"titulo\":\"New\"}"))
 			.andExpect(status().isOk())
@@ -77,14 +82,17 @@ class AlbumControllerTests {
 	@Test
 	void listaAlbunsPaginados() throws Exception {
 		mockMvc.perform(post("/v1/albuns")
+			.with(jwt())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"titulo\":\"B\"}")).andExpect(status().isCreated());
 
 		mockMvc.perform(post("/v1/albuns")
+			.with(jwt())
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"titulo\":\"A\"}")).andExpect(status().isCreated());
 
 		mockMvc.perform(get("/v1/albuns")
+			.with(jwt())
 			.param("ordem", "asc")
 			.param("pagina", "0")
 			.param("tamanho", "1"))
@@ -98,6 +106,7 @@ class AlbumControllerTests {
 	@Test
 	void filtraAlbunsPorNomeDoArtista() throws Exception {
 		mockMvc.perform(post("/v1/artistas")
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nome\":\"Mike Shinoda\"}"))
 			.andExpect(status().isCreated());
@@ -105,16 +114,18 @@ class AlbumControllerTests {
 		Long artistaId = artistaRepository.findAll().getFirst().getId();
 
 		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"titulo\":\"Post Traumatic\",\"artistaIds\":[" + artistaId + "]}"))
 			.andExpect(status().isCreated());
 
 		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"titulo\":\"Outro\"}"))
 			.andExpect(status().isCreated());
 
-		mockMvc.perform(get("/v1/albuns").param("artistaNome", "Mike"))
+		mockMvc.perform(get("/v1/albuns").with(jwt()).param("artistaNome", "Mike"))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.content.length()").value(1))
 			.andExpect(jsonPath("$.content[0].titulo").value("Post Traumatic"));
@@ -123,6 +134,7 @@ class AlbumControllerTests {
 	@Test
 	void rejeitaCriacaoDeAlbumComArtistaInexistente() throws Exception {
 		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"titulo\":\"Qualquer\",\"artistaIds\":[999999]}"))
 			.andExpect(status().isBadRequest());
@@ -131,6 +143,7 @@ class AlbumControllerTests {
 	@Test
 	void rejeitaAtualizacaoDeAlbumComArtistaInexistente() throws Exception {
 		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"titulo\":\"Old\"}"))
 			.andExpect(status().isCreated());
@@ -138,6 +151,7 @@ class AlbumControllerTests {
 		Long albumId = albumRepository.findAll().getFirst().getId();
 
 		mockMvc.perform(put("/v1/albuns/{id}", albumId)
+				.with(jwt())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"artistaIds\":[999999]}"))
 			.andExpect(status().isBadRequest());

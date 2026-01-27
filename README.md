@@ -25,6 +25,13 @@ mvn spring-boot:run
 
 A aplicação sobe por padrão em `http://localhost:8080`.
 
+Configurações via variáveis de ambiente (opcionais):
+
+```bash
+JWT_SECRET=uma-chave-com-mais-de-32-caracteres
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+```
+
 ### 2. Banco de dados (perfis)
 
 - Padrão: profile `local` (H2 em memória)
@@ -42,6 +49,10 @@ SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
   - `GET http://localhost:8080/actuator/health`
   - `GET http://localhost:8080/actuator/health/liveness`
   - `GET http://localhost:8080/actuator/health/readiness`
+- Autenticação:
+  - `POST http://localhost:8080/v1/autenticacao/cadastrar`
+  - `POST http://localhost:8080/v1/autenticacao/login`
+  - `POST http://localhost:8080/v1/autenticacao/renovar`
 - Artistas:
   - `POST http://localhost:8080/v1/artistas`
   - `PUT http://localhost:8080/v1/artistas/{id}`
@@ -52,6 +63,8 @@ SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
   - `PUT http://localhost:8080/v1/albuns/{id}`
   - `GET http://localhost:8080/v1/albuns/{id}`
   - `GET http://localhost:8080/v1/albuns?titulo=Post&artistaNome=Mike&artistaId=1&ordem=asc&pagina=0&tamanho=20`
+
+Os endpoints `/v1/**` exigem `Authorization: Bearer <accessToken>`.
 
 ---
 
@@ -71,20 +84,33 @@ src/main/java
     ├── api
     │   ├── PingController.java
     │   └── v1
+    │       ├── AutenticacaoController.java
     │       ├── AlbumController.java
     │       ├── ArtistaController.java
     │       └── dto
+    │           ├── CadastroUsuarioRequest.java
     │           ├── AlbumRequest.java
     │           ├── AlbumResponse.java
+    │           ├── LoginRequest.java
+    │           ├── RenovarTokenRequest.java
+    │           ├── TokenResponse.java
     │           ├── ArtistaRequest.java
     │           └── ArtistaResponse.java
+    ├── config
+    │   ├── RateLimitFilter.java
+    │   └── SegurancaConfig.java
     ├── domain
     │   ├── Album.java
-    │   └── Artista.java
+    │   ├── Artista.java
+    │   ├── RefreshToken.java
+    │   └── Usuario.java
     ├── repository
     │   ├── AlbumRepository.java
-    │   └── ArtistaRepository.java
+    │   ├── ArtistaRepository.java
+    │   ├── RefreshTokenRepository.java
+    │   └── UsuarioRepository.java
     ├── service
+    │   ├── AutenticacaoService.java
     │   ├── AlbumService.java
     │   └── ArtistaService.java
     └── MusicApiApplication.java
@@ -93,11 +119,13 @@ src/main/resources
 ├── application-local.yml
 ├── application-postgres.yml
 └── db/migration
-    └── V1__criar_schema_inicial.sql
+    ├── V1__criar_schema_inicial.sql
+    └── V2__criar_tabelas_usuario_e_refresh_token.sql
 src/test/java
 └── br/gov/seplag/musicapi
     ├── ActuatorHealthTests.java
     └── api/v1
+        ├── AutenticacaoControllerTests.java
         ├── AlbumControllerTests.java
         └── ArtistaControllerTests.java
 ```
