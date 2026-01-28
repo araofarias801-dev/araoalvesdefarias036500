@@ -30,6 +30,10 @@ Configurações via variáveis de ambiente (opcionais):
 ```bash
 JWT_SECRET=uma-chave-com-mais-de-32-caracteres
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=musicapi
 ```
 
 ### 2. Banco de dados (perfis)
@@ -63,6 +67,8 @@ SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
   - `PUT http://localhost:8080/v1/albuns/{id}`
   - `GET http://localhost:8080/v1/albuns/{id}`
   - `GET http://localhost:8080/v1/albuns?titulo=Post&artistaNome=Mike&artistaId=1&ordem=asc&pagina=0&tamanho=20`
+  - `POST http://localhost:8080/v1/albuns/{id}/capa` (multipart, campo `arquivo`)
+  - `GET http://localhost:8080/v1/albuns/{id}/capa/url`
 
 Os endpoints `/v1/**` exigem `Authorization: Bearer <accessToken>`.
 
@@ -91,27 +97,32 @@ src/main/java
     │           ├── CadastroUsuarioRequest.java
     │           ├── AlbumRequest.java
     │           ├── AlbumResponse.java
+    │           ├── CapaUrlResponse.java
     │           ├── LoginRequest.java
     │           ├── RenovarTokenRequest.java
     │           ├── TokenResponse.java
     │           ├── ArtistaRequest.java
     │           └── ArtistaResponse.java
     ├── config
+    │   ├── MinioConfig.java
     │   ├── RateLimitFilter.java
     │   └── SegurancaConfig.java
     ├── domain
     │   ├── Album.java
     │   ├── Artista.java
+    │   ├── CapaAlbum.java
     │   ├── RefreshToken.java
     │   └── Usuario.java
     ├── repository
     │   ├── AlbumRepository.java
     │   ├── ArtistaRepository.java
+    │   ├── CapaAlbumRepository.java
     │   ├── RefreshTokenRepository.java
     │   └── UsuarioRepository.java
     ├── service
     │   ├── AutenticacaoService.java
     │   ├── AlbumService.java
+    │   ├── CapaAlbumService.java
     │   └── ArtistaService.java
     └── MusicApiApplication.java
 src/main/resources
@@ -120,7 +131,8 @@ src/main/resources
 ├── application-postgres.yml
 └── db/migration
     ├── V1__criar_schema_inicial.sql
-    └── V2__criar_tabelas_usuario_e_refresh_token.sql
+    ├── V2__criar_tabelas_usuario_e_refresh_token.sql
+    └── V3__criar_tabela_album_capa.sql
 src/test/java
 └── br/gov/seplag/musicapi
     ├── ActuatorHealthTests.java

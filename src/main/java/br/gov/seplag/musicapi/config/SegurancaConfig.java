@@ -41,11 +41,13 @@ public class SegurancaConfig {
 		http.csrf(csrf -> csrf.disable());
 		http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 		http.cors(Customizer.withDefaults());
+		http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
 		http.authorizeHttpRequests(auth -> auth
 			.requestMatchers("/actuator/**").permitAll()
 			.requestMatchers("/v1/ping").permitAll()
 			.requestMatchers("/v1/autenticacao/**").permitAll()
+			.requestMatchers("/h2-console/**").permitAll()
 			.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 			.requestMatchers("/v1/**").authenticated()
 			.anyRequest().permitAll()

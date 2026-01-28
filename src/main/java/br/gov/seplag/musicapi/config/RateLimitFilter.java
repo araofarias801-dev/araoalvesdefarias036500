@@ -26,16 +26,25 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	}
 
 	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) {
+		if (!enabled) {
+			return true;
+		}
+		String path = request.getRequestURI();
+		return path != null && (
+			path.startsWith("/h2-console")
+				|| path.startsWith("/actuator")
+				|| path.equals("/v1/ping")
+				|| path.startsWith("/v1/autenticacao")
+		);
+	}
+
+	@Override
 	protected void doFilterInternal(
 		HttpServletRequest request,
 		HttpServletResponse response,
 		FilterChain filterChain
 	) throws ServletException, IOException {
-		if (!enabled) {
-			filterChain.doFilter(request, response);
-			return;
-		}
-
 		String key = identificarChave(request);
 		long agora = Instant.now().toEpochMilli();
 		long janelaMs = 60_000L;
