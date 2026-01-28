@@ -1,6 +1,7 @@
 package br.gov.seplag.musicapi.api.v1;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -9,11 +10,17 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 
 import br.gov.seplag.musicapi.repository.AlbumRepository;
 import br.gov.seplag.musicapi.repository.ArtistaRepository;
+import br.gov.seplag.musicapi.repository.CapaAlbumRepository;
+import io.minio.MinioClient;
+import io.minio.ObjectWriteResponse;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +36,12 @@ class AlbumControllerTests {
 
 	@Autowired
 	private AlbumRepository albumRepository;
+
+	@Autowired
+	private CapaAlbumRepository capaAlbumRepository;
+
+	@MockBean
+	private MinioClient minioClient;
 
 	@Test
 	void criaEBuscaAlbum() throws Exception {
@@ -155,5 +168,61 @@ class AlbumControllerTests {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"artistaIds\":[999999]}"))
 			.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void enviaCapaEGeraUrl() throws Exception {
+		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"titulo\":\"Com capa\"}"))
+			.andExpect(status().isCreated());
+
+		Long albumId = albumRepository.findAll().getFirst().getId();
+
+		Mockito.when(minioClient.bucketExists(Mockito.any())).thenReturn(true);
+		ObjectWriteResponse resposta = Mockito.mock(ObjectWriteResponse.class);
+		Mockito.when(resposta.etag()).thenReturn("etag");
+		Mockito.when(minioClient.putObject(Mockito.any())).thenReturn(resposta);
+		Mockito.when(minioClient.getPresignedObjectUrl(Mockito.any())).thenReturn("http://presigned");
+
+		MockMultipartFile arquivo = new MockMultipartFile(
+			"arquivo",
+			"capa.png",
+			"image/png",
+			"conteudo".getBytes()
+		);
+
+		mockMvc.perform(multipart("/v1/albuns/{id}/capa", albumId).file(arquivo).with(jwt()))
+			.andExpect(status().isCreated());
+
+		mockMvc.perform(get("/v1/albuns/{id}/capa/url", albumId).with(jwt()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.url").value("http://presigned"));
+
+		Mockito.verify(minioClient).putObject(Mockito.any());
+		Mockito.verify(minioClient).getPresignedObjectUrl(Mockito.any());
+		org.junit.jupiter.api.Assertions.assertTrue(capaAlbumRepository.findByAlbumId(albumId).isPresent());
+	}
+
+	@Test
+	void rejeitaEnvioDeCapaComTipoInvalido() throws Exception {
+		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"titulo\":\"Sem capa\"}"))
+			.andExpect(status().isCreated());
+
+		Long albumId = albumRepository.findAll().getFirst().getId();
+
+		MockMultipartFile arquivo = new MockMultipartFile(
+			"arquivo",
+			"capa.txt",
+			"text/plain",
+			"conteudo".getBytes()
+		);
+
+		mockMvc.perform(multipart("/v1/albuns/{id}/capa", albumId).file(arquivo).with(jwt()))
+			.andExpect(status().isUnsupportedMediaType());
 	}
 }
