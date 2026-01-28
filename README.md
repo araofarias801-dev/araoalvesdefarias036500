@@ -9,7 +9,13 @@ O enunciado completo está em `prova.txt` na raiz do projeto.
 - Java 21
 - Spring Boot 3.5.8
 - Spring Web
+- Spring Security (JWT + Refresh Token)
 - Spring Boot Actuator (Health / Liveness / Readiness)
+- Spring Data JPA
+- Flyway Migrations
+- PostgreSQL (profile `postgres`) / H2 (profile `local`)
+- MinIO (armazenamento S3)
+- OpenAPI/Swagger UI (Springdoc)
 - Maven
 - JUnit 5 (testes)
 
@@ -17,7 +23,23 @@ O enunciado completo está em `prova.txt` na raiz do projeto.
 
 ## 🧱 Como executar o projeto
 
-### 1. Subir a aplicação
+### 1. Subir dependências (Postgres + MinIO + Adminer)
+
+```bash
+docker compose up -d
+```
+
+- Postgres: `localhost:5432`
+- MinIO API: `http://localhost:9000`
+- MinIO Console: `http://localhost:9001`
+- Adminer (visualizar tabelas/dados do Postgres): `http://localhost:5050`
+  - System: `PostgreSQL`
+  - Server: `postgres`
+  - Username: `postgres`
+  - Password: `postgres`
+  - Database: `musicapi`
+
+### 2. Subir a aplicação
 
 ```bash
 mvn spring-boot:run
@@ -36,16 +58,27 @@ MINIO_SECRET_KEY=minioadmin
 MINIO_BUCKET=musicapi
 ```
 
-### 2. Banco de dados (perfis)
+### 3. Banco de dados (perfis)
 
-- Padrão: profile `local` (H2 em memória)
-- Para usar PostgreSQL:
+- Padrão: profile `postgres` (PostgreSQL via docker-compose)
+- Para usar H2 em memória:
 
 ```bash
-SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
+SPRING_PROFILES_ACTIVE=local mvn spring-boot:run
 ```
 
-### 3. Endpoints liberados
+### 4. Swagger (OpenAPI)
+
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+
+Para testar endpoints protegidos no Swagger:
+
+1) Execute `POST /v1/autenticacao/login`
+2) Copie o valor de `accessToken` do response
+3) Clique em **Authorize** e cole somente o JWT (sem o prefixo `Bearer`)
+
+### 5. Endpoints liberados
 
 - Ping:
   - `GET http://localhost:8080/v1/ping`
@@ -72,6 +105,11 @@ SPRING_PROFILES_ACTIVE=postgres mvn spring-boot:run
 
 Os endpoints `/v1/**` exigem `Authorization: Bearer <accessToken>`.
 
+Rate limit:
+
+- Padrão: 10 requisições/minuto por usuário
+- Configuração: `app.ratelimit.enabled` e `app.ratelimit.requests-per-minute`
+
 ---
 
 ## ✅ Como executar os testes
@@ -79,6 +117,8 @@ Os endpoints `/v1/**` exigem `Authorization: Bearer <accessToken>`.
 ```bash
 mvn clean test
 ```
+
+Observação: os testes rodam com profile `local` (H2) por padrão.
 
 ---
 
