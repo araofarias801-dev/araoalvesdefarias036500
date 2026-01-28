@@ -34,6 +34,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 		return path != null && (
 			path.startsWith("/h2-console")
 				|| path.startsWith("/actuator")
+				|| path.startsWith("/swagger-ui")
+				|| path.startsWith("/v3/api-docs")
 				|| path.equals("/v1/ping")
 				|| path.startsWith("/v1/autenticacao")
 		);

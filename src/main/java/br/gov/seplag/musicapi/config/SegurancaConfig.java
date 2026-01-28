@@ -1,5 +1,7 @@
 package br.gov.seplag.musicapi.config;
 
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +34,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 
 @Configuration
+@SecurityScheme(
+	name = "bearerAuth",
+	type = SecuritySchemeType.HTTP,
+	scheme = "bearer",
+	bearerFormat = "JWT"
+)
 public class SegurancaConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(
@@ -45,6 +53,8 @@ public class SegurancaConfig {
 
 		http.authorizeHttpRequests(auth -> auth
 			.requestMatchers("/actuator/**").permitAll()
+			.requestMatchers("/v3/api-docs/**").permitAll()
+			.requestMatchers("/swagger-ui/**").permitAll()
 			.requestMatchers("/v1/ping").permitAll()
 			.requestMatchers("/v1/autenticacao/**").permitAll()
 			.requestMatchers("/h2-console/**").permitAll()

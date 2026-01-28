@@ -36,5 +36,19 @@ class ActuatorHealthTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("UP"));
 	}
+
+	@Test
+	void swaggerApiDocsIsPublic() throws Exception {
+		mockMvc.perform(get("/v3/api-docs"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.openapi").isString())
+			.andExpect(jsonPath("$.components.securitySchemes.bearerAuth.type").value("http"));
+	}
+
+	@Test
+	void swaggerUiIsPublic() throws Exception {
+		mockMvc.perform(get("/swagger-ui/index.html"))
+			.andExpect(status().isOk());
+	}
 }
 
