@@ -12,8 +12,8 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
 		select distinct al
 		from Album al
 		left join al.artistas ar
-		where (:titulo is null or upper(al.titulo) like upper(concat('%', :titulo, '%')))
-		  and (:artistaNome is null or upper(ar.nome) like upper(concat('%', :artistaNome, '%')))
+		where (:titulo = '' or upper(al.titulo) like upper(concat('%', :titulo, '%')))
+		  and (:artistaNome = '' or upper(ar.nome) like upper(concat('%', :artistaNome, '%')))
 		  and (:artistaId is null or ar.id = :artistaId)
 		""")
 	Page<Album> buscar(

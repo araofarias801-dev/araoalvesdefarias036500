@@ -151,6 +151,24 @@ class AlbumControllerTests {
 	}
 
 	@Test
+	void filtraAlbunsPorTitulo() throws Exception {
+		mockMvc.perform(post("/v1/albuns")
+			.with(jwt())
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("{\"titulo\":\"Post Traumatic\"}")).andExpect(status().isCreated());
+
+		mockMvc.perform(post("/v1/albuns")
+			.with(jwt())
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("{\"titulo\":\"Outro\"}")).andExpect(status().isCreated());
+
+		mockMvc.perform(get("/v1/albuns").with(jwt()).param("titulo", "post"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(1))
+			.andExpect(jsonPath("$.content[0].titulo").value("Post Traumatic"));
+	}
+
+	@Test
 	void rejeitaCriacaoDeAlbumComArtistaInexistente() throws Exception {
 		mockMvc.perform(post("/v1/albuns")
 				.with(jwt())

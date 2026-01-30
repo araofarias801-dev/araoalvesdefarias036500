@@ -70,6 +70,16 @@ APP_INTEGRADOR_REGIONAIS_URL=https://integrador-argus-api.geia.vip/v1/regionais
 SPRING_PROFILES_ACTIVE=local mvn spring-boot:run
 ```
 
+### 3.1 Flyway (migrations)
+
+As migrations estão separadas por tipo de banco para evitar conflitos de versão:
+
+- `src/main/resources/db/migration/common`: migrations comuns (Postgres + H2)
+- `src/main/resources/db/migration/postgresql`: migrations específicas do Postgres
+- `src/main/resources/db/migration/h2`: migrations específicas do H2
+
+Os profiles `postgres` e `local` configuram `spring.flyway.locations` para apontar para as pastas corretas.
+
 ### 4. Swagger (OpenAPI)
 
 - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
@@ -221,13 +231,19 @@ src/main/resources
 ├── application-local.yml
 ├── application-postgres.yml
 └── db/migration
-    ├── V1__criar_schema_inicial.sql
-    ├── V2__criar_tabelas_usuario_e_refresh_token.sql
-    ├── V3__criar_tabela_album_capa.sql
-    └── V4__criar_tabela_regional.sql
+    ├── common
+    │   ├── V1__criar_schema_inicial.sql
+    │   ├── V2__criar_tabelas_usuario_e_refresh_token.sql
+    │   ├── V3__criar_tabela_album_capa.sql
+    │   └── V4__criar_tabela_regional.sql
+    ├── h2
+    │   └── V5__corrigir_tipo_titulo_album.sql
+    └── postgresql
+        └── V5__corrigir_tipo_titulo_album.sql
 src/test/java
 └── br/gov/seplag/musicapi
     ├── ActuatorHealthTests.java
+    ├── MusicApiApplicationTests.java
     ├── api/v1
     │   ├── AutenticacaoControllerTests.java
     │   ├── AlbumControllerTests.java

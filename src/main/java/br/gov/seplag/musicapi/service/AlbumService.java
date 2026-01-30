@@ -119,8 +119,8 @@ public class AlbumService {
 		Sort sort = Sort.by(parseDirection(ordem), "titulo");
 		Pageable pageable = PageRequest.of(pagina, tamanho, sort);
 
-		String tituloParam = normalizarFiltro(titulo);
-		String artistaNomeParam = normalizarFiltro(artistaNome);
+		String tituloParam = Optional.ofNullable(normalizarFiltro(titulo)).orElse("");
+		String artistaNomeParam = Optional.ofNullable(normalizarFiltro(artistaNome)).orElse("");
 
 		return albumRepository.buscar(tituloParam, artistaNomeParam, artistaId, pageable).map(this::toResponse);
 	}

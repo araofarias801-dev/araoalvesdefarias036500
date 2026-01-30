@@ -3,6 +3,8 @@ spring:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:musicapi}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
+  flyway:
+    locations: classpath:db/migration/common,classpath:db/migration/postgresql
   jpa:
     hibernate:
       ddl-auto: none
