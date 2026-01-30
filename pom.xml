@@ -21,7 +21,20 @@
 		<minio.version>8.6.0</minio.version>
 		<okhttp.version>4.12.0</okhttp.version>
 		<springdoc.version>2.6.0</springdoc.version>
+		<spring-cloud.version>2025.0.0</spring-cloud.version>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
 		<dependency>
@@ -90,6 +103,11 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
@@ -112,9 +130,12 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
+					<printSummary>true</printSummary>
 					<systemPropertyVariables>
 						<spring.profiles.active>local</spring.profiles.active>
 						<app.ratelimit.enabled>false</app.ratelimit.enabled>
+						<spring.main.banner-mode>off</spring.main.banner-mode>
+						<logging.level.root>WARN</logging.level.root>
 					</systemPropertyVariables>
 				</configuration>
 			</plugin>
