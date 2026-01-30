@@ -12,6 +12,7 @@ O enunciado completo está em `prova.txt` na raiz do projeto.
 - Spring Security (JWT + Refresh Token)
 - Spring Boot Actuator (Health / Liveness / Readiness)
 - Spring Data JPA
+- Spring Cloud OpenFeign
 - Flyway Migrations
 - PostgreSQL (profile `postgres`) / H2 (profile `local`)
 - MinIO (armazenamento S3)
@@ -56,6 +57,7 @@ MINIO_ENDPOINT=http://localhost:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_BUCKET=musicapi
+APP_INTEGRADOR_REGIONAIS_URL=https://integrador-argus-api.geia.vip/v1/regionais
 ```
 
 ### 3. Banco de dados (perfis)
@@ -102,6 +104,9 @@ Para testar endpoints protegidos no Swagger:
   - `GET http://localhost:8080/v1/albuns?titulo=Post&artistaNome=Mike&artistaId=1&ordem=asc&pagina=0&tamanho=20`
   - `POST http://localhost:8080/v1/albuns/{id}/capa` (multipart, campo `arquivo`)
   - `GET http://localhost:8080/v1/albuns/{id}/capa/url`
+- Regionais:
+  - `POST http://localhost:8080/v1/regionais/sincronizar`
+  - `GET http://localhost:8080/v1/regionais?ativo=true&nome=Regional`
 
 Os endpoints `/v1/**` exigem `Authorization: Bearer <accessToken>`.
 
@@ -133,13 +138,16 @@ src/main/java
     │       ├── AutenticacaoController.java
     │       ├── AlbumController.java
     │       ├── ArtistaController.java
+    │       ├── RegionalController.java
     │       └── dto
     │           ├── CadastroUsuarioRequest.java
     │           ├── AlbumRequest.java
     │           ├── AlbumResponse.java
     │           ├── CapaUrlResponse.java
     │           ├── LoginRequest.java
+    │           ├── RegionalResponse.java
     │           ├── RenovarTokenRequest.java
+    │           ├── SincronizarRegionaisResponse.java
     │           ├── TokenResponse.java
     │           ├── ArtistaRequest.java
     │           └── ArtistaResponse.java
@@ -152,18 +160,22 @@ src/main/java
     │   ├── Artista.java
     │   ├── CapaAlbum.java
     │   ├── RefreshToken.java
+    │   ├── Regional.java
     │   └── Usuario.java
     ├── repository
     │   ├── AlbumRepository.java
     │   ├── ArtistaRepository.java
     │   ├── CapaAlbumRepository.java
     │   ├── RefreshTokenRepository.java
+    │   ├── RegionalRepository.java
     │   └── UsuarioRepository.java
     ├── service
     │   ├── AutenticacaoService.java
     │   ├── AlbumService.java
     │   ├── CapaAlbumService.java
-    │   └── ArtistaService.java
+    │   ├── ArtistaService.java
+    │   ├── RegionaisIntegradorClient.java
+    │   └── RegionalService.java
     └── MusicApiApplication.java
 src/main/resources
 ├── application.yml
@@ -172,13 +184,17 @@ src/main/resources
 └── db/migration
     ├── V1__criar_schema_inicial.sql
     ├── V2__criar_tabelas_usuario_e_refresh_token.sql
-    └── V3__criar_tabela_album_capa.sql
+    ├── V3__criar_tabela_album_capa.sql
+    └── V4__criar_tabela_regional.sql
 src/test/java
 └── br/gov/seplag/musicapi
     ├── ActuatorHealthTests.java
-    └── api/v1
-        ├── AutenticacaoControllerTests.java
-        ├── AlbumControllerTests.java
-        └── ArtistaControllerTests.java
+    ├── api/v1
+    │   ├── AutenticacaoControllerTests.java
+    │   ├── AlbumControllerTests.java
+    │   ├── ArtistaControllerTests.java
+    │   └── RegionalControllerTests.java
+    └── service
+        └── RegionalServiceUnitTests.java
 ```
 
