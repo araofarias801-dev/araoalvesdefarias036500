@@ -9,6 +9,7 @@ O enunciado completo está em `prova.txt` na raiz do projeto.
 - Java 21
 - Spring Boot 3.5.8
 - Spring Web
+- Spring WebSocket (STOMP)
 - Spring Security (JWT + Refresh Token)
 - Spring Boot Actuator (Health / Liveness / Readiness)
 - Spring Data JPA
@@ -107,8 +108,44 @@ Para testar endpoints protegidos no Swagger:
 - Regionais:
   - `POST http://localhost:8080/v1/regionais/sincronizar`
   - `GET http://localhost:8080/v1/regionais?ativo=true&nome=Regional`
+- WebSocket:
+  - Endpoint STOMP: `/ws`
+  - Tópico: `/topic/albuns` (notifica a cada novo álbum cadastrado)
 
 Os endpoints `/v1/**` exigem `Authorization: Bearer <accessToken>`.
+
+---
+
+## 🔔 WebSocket (notificações)
+
+A API publica uma mensagem no tópico `/topic/albuns` sempre que um álbum é cadastrado via `POST /v1/albuns`.
+
+- Endpoint STOMP: `ws://localhost:8080/ws`
+- Tópico: `/topic/albuns`
+- Payload: mesmo formato de `AlbumResponse` retornado no `POST /v1/albuns`
+
+O endpoint WebSocket respeita `CORS_ALLOWED_ORIGINS` (mesma variável usada no HTTP).
+
+### Testar com o HTML (teste_websocket.html)
+
+Pré-requisito: a API deve estar rodando na porta 8080.
+
+1) Sirva o arquivo HTML com um servidor estático (na raiz do projeto):
+
+```powershell
+jwebserver -p 5500 -d (Get-Location).Path
+```
+
+2) Abra no navegador:
+
+- `http://localhost:5500/teste_websocket.html`
+
+3) Crie um álbum via `POST /v1/albuns` (com JWT) e veja a mensagem chegar no tópico `/topic/albuns` na própria página.
+
+Observações:
+
+- Se o navegador bloquear por CORS, ajuste `CORS_ALLOWED_ORIGINS` para incluir `http://localhost:5500` (e reinicie a API).
+- Logs 404 para `/@vite/client` no terminal do servidor estático podem ser ignorados.
 
 Rate limit:
 
@@ -152,9 +189,11 @@ src/main/java
     │           ├── ArtistaRequest.java
     │           └── ArtistaResponse.java
     ├── config
+    │   ├── IntegradorFeignConfig.java
     │   ├── MinioConfig.java
     │   ├── RateLimitFilter.java
-    │   └── SegurancaConfig.java
+    │   ├── SegurancaConfig.java
+    │   └── WebSocketConfig.java
     ├── domain
     │   ├── Album.java
     │   ├── Artista.java

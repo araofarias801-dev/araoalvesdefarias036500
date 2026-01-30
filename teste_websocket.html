@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8" /><title>WS Test</title></head>
+  <body>
+    <pre id="log"></pre>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <script>
+      const log = (m) => document.getElementById('log').textContent += m + "\n";
+      log("Iniciando teste de WebSocket/STOMP...");
+
+      window.addEventListener("error", (e) => {
+        if (e?.error?.stack) {
+          log("Erro JS: " + e.error.stack);
+          return;
+        }
+        log("Erro JS: " + (e?.message ?? e));
+      });
+      window.addEventListener("unhandledrejection", (e) => {
+        log("Promise rejeitada: " + (e?.reason?.stack ?? e?.reason ?? e));
+      });
+
+      const connectWithStompJsOverSockJs = () => {
+        log("Conectando via SockJS + stompjs (CDN)...");
+        const socket = new SockJS("http://localhost:8080/ws");
+        const client = Stomp.over(socket);
+        client.debug = (msg) => log(msg);
+
+        client.connect({}, () => {
+          log("Conectado!");
+          client.subscribe("/topic/albuns", (msg) => {
+            log("Mensagem em /topic/albuns:");
+            log(msg.body);
+          });
+          log("Inscrito em /topic/albuns. Agora crie um álbum via POST /v1/albuns.");
+        }, (err) => {
+          log("Erro (stompjs): " + (err?.message ?? JSON.stringify(err)));
+        });
+      };
+
+      const connectWithMinimalStompOverWebSocket = () => {
+        log("Conectando via WebSocket puro + STOMP mínimo (sem CDN)...");
+        const ws = new WebSocket("ws://localhost:8080/ws-native");
+
+        const sendFrame = (command, headers, body) => {
+          const lines = [command];
+          for (const [k, v] of Object.entries(headers ?? {})) {
+            lines.push(`${k}:${v}`);
+          }
+          lines.push("", body ?? "");
+          ws.send(lines.join("\n") + "\0");
+        };
+
+        const parseFrame = (raw) => {
+          const text = raw.replace(/\0+$/, "");
+          const lines = text.split("\n");
+          const command = lines.shift() ?? "";
+          const headers = {};
+          while (lines.length > 0) {
+            const line = lines.shift();
+            if (line === "") break;
+            const idx = line.indexOf(":");
+            if (idx > -1) headers[line.slice(0, idx)] = line.slice(idx + 1);
+          }
+          const body = lines.join("\n");
+          return { command, headers, body };
+        };
+
+        ws.addEventListener("open", () => {
+          log("WebSocket aberto. Enviando CONNECT...");
+          sendFrame("CONNECT", {
+            "accept-version": "1.2",
+            host: "localhost",
+          });
+        });
+        ws.addEventListener("message", (ev) => {
+          const data = typeof ev.data === "string" ? ev.data : "";
+          const frame = parseFrame(data);
+          if (frame.command === "CONNECTED") {
+            log("STOMP CONNECTED. Inscrevendo em /topic/albuns...");
+            sendFrame("SUBSCRIBE", {
+              id: "sub-0",
+              destination: "/topic/albuns",
+              ack: "auto",
+            });
+            log("Inscrito em /topic/albuns. Agora crie um álbum via POST /v1/albuns.");
+            return;
+          }
+          if (frame.command === "MESSAGE") {
+            log("Mensagem em /topic/albuns:");
+            log(frame.body);
+            return;
+          }
+          if (frame.command) {
+            log(`Frame: ${frame.command}`);
+            if (frame.body) log(frame.body);
+          }
+        });
+        ws.addEventListener("close", (ev) => log(`WebSocket fechado (code=${ev.code}, reason=${ev.reason || "sem motivo"})`));
+        ws.addEventListener("error", () => log("WebSocket erro (sem detalhes no navegador)."));
+      };
+
+      if (typeof SockJS !== "undefined" && typeof Stomp !== "undefined") {
+        connectWithStompJsOverSockJs();
+      } else {
+        log("CDN bloqueado/indisponível: SockJS/Stomp não carregaram.");
+        connectWithMinimalStompOverWebSocket();
+      }
+    </script>
+  </body>
+</html>
