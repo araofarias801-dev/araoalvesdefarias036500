@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -26,10 +27,16 @@ import org.springframework.web.server.ResponseStatusException;
 public class AlbumService {
 	private final AlbumRepository albumRepository;
 	private final ArtistaRepository artistaRepository;
+	private final SimpMessagingTemplate messagingTemplate;
 
-	public AlbumService(AlbumRepository albumRepository, ArtistaRepository artistaRepository) {
+	public AlbumService(
+		AlbumRepository albumRepository,
+		ArtistaRepository artistaRepository,
+		SimpMessagingTemplate messagingTemplate
+	) {
 		this.albumRepository = albumRepository;
 		this.artistaRepository = artistaRepository;
+		this.messagingTemplate = messagingTemplate;
 	}
 
 	@Transactional
@@ -53,7 +60,9 @@ public class AlbumService {
 			album.getArtistas().addAll(artistas);
 		}
 
-		return buscarPorId(album.getId());
+		AlbumResponse response = buscarPorId(album.getId());
+		messagingTemplate.convertAndSend("/topic/albuns", response);
+		return response;
 	}
 
 	@Transactional
