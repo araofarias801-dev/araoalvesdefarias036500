@@ -170,7 +170,25 @@ Rate limit:
 mvn clean test
 ```
 
-Observação: os testes rodam com profile `local` (H2) por padrão.
+Os testes rodam com profile `local` (H2) por padrão.
+
+Para uma execução mais estável (sem forking) e com stacktrace completo:
+
+```bash
+mvn -DforkCount=0 -DtrimStackTrace=false test
+```
+
+Para rodar um teste (ou classe) específica:
+
+```bash
+mvn -Dtest=AlbumServiceUnitTests test
+```
+
+Para gerar o JAR sem rodar testes:
+
+```bash
+mvn -DskipTests verify
+```
 
 ---
 
@@ -187,17 +205,18 @@ src/main/java
     │       ├── ArtistaController.java
     │       ├── RegionalController.java
     │       └── dto
-    │           ├── CadastroUsuarioRequest.java
     │           ├── AlbumRequest.java
     │           ├── AlbumResponse.java
+    │           ├── ArtistaRequest.java
+    │           ├── ArtistaResponse.java
+    │           ├── ArtistaResumoResponse.java
+    │           ├── CadastroUsuarioRequest.java
     │           ├── CapaUrlResponse.java
     │           ├── LoginRequest.java
     │           ├── RegionalResponse.java
     │           ├── RenovarTokenRequest.java
     │           ├── SincronizarRegionaisResponse.java
-    │           ├── TokenResponse.java
-    │           ├── ArtistaRequest.java
-    │           └── ArtistaResponse.java
+    │           └── TokenResponse.java
     ├── config
     │   ├── IntegradorFeignConfig.java
     │   ├── MinioConfig.java
@@ -250,6 +269,10 @@ src/test/java
     │   ├── ArtistaControllerTests.java
     │   └── RegionalControllerTests.java
     └── service
+        ├── AlbumServiceUnitTests.java
+        ├── ArtistaServiceUnitTests.java
+        ├── AutenticacaoServiceUnitTests.java
+        ├── CapaAlbumServiceUnitTests.java
         └── RegionalServiceUnitTests.java
 ```
 
