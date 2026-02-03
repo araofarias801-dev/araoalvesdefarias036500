@@ -2,9 +2,24 @@
 
 API REST desenvolvida em Java (Spring Boot) para cadastro e consulta de artistas e álbuns.
 
-O enunciado completo está em `prova.txt` na raiz do projeto.
 
-## 🚀 Tecnologias utilizadas (atual)
+## 🪪 Dados de inscrição e vaga
+
+- Perfil de projeto escolhido: Back-End (Java)
+- Processo seletivo: Processo Seletivo Conjunto Nº 001/2026/SEPLAG e demais Órgãos
+- Perfil do processo: Engenheiro da Computação - Sênior
+- Cargo: Analista de Tecnologia da Informação
+- Nome: ARAO ALVES DE FARIAS
+- Nº inscrição: 16370
+- Email: arao.alves7@gmail.com
+- CPF: 036.500.893-19
+- RG: 0276300620049
+- Celular: (98) 98246-8103
+- Data da inscrição: 23/01/2026 10:44:06
+- Cidade: Cuiabá
+- Local: Secretaria de Estado de Planejamento e Gestão
+
+## 🚀 Tecnologias utilizadas
 
 - Java 21
 - Spring Boot 3.5.8
@@ -20,6 +35,39 @@ O enunciado completo está em `prova.txt` na raiz do projeto.
 - OpenAPI/Swagger UI (Springdoc)
 - Maven
 - JUnit 5 (testes)
+
+---
+
+## 🏗️ Decisões e arquitetura
+
+- Camadas:
+  - API (controllers + DTOs) em `br.gov.seplag.musicapi.api`
+  - Regras/coordenação em `br.gov.seplag.musicapi.service`
+  - Persistência em `br.gov.seplag.musicapi.repository` (Spring Data JPA)
+  - Entidades JPA em `br.gov.seplag.musicapi.domain`
+- Banco de dados:
+  - Relacionamento Artista–Álbum N:N via tabela `artista_album`
+  - Migrações com Flyway, separadas em `common` + específicas por banco (`h2` / `postgresql`)
+  - Carga inicial via migration (`V6__popular_dados_iniciais.sql`)
+- Segurança:
+  - Endpoints versionados em `/v1/**`
+  - JWT com expiração curta (access token) e renovação via refresh token persistido
+  - CORS configurável via `CORS_ALLOWED_ORIGINS` (para restringir domínios permitidos)
+- Upload e recuperação de capas (MinIO):
+  - Upload de uma ou mais imagens de capa por álbum com armazenamento do arquivo no MinIO
+  - Metadados persistidos em `album_capa`
+  - Recuperação via links pré-assinados com expiração (30 min)
+  - Endpoints:
+    - `POST /v1/albuns/{id}/capa` (multipart: `arquivo` ou `arquivos`)
+    - `GET /v1/albuns/{id}/capa/url` (capa mais recente)
+    - `GET /v1/albuns/{id}/capa/urls` (todas as capas do álbum)
+- WebSocket:
+  - STOMP em `/ws`, tópico `/topic/albuns` notificado a cada novo álbum criado
+- Rate limit:
+  - Limite por usuário configurável (`app.ratelimit.*`), padrão 10 requisições/minuto
+- Regionais (integrador):
+  - Importação e sincronização a partir do endpoint do integrador via OpenFeign
+  - Versionamento simples de alteração: inativa registro antigo e cria novo
 
 ---
 
