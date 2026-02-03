@@ -3,6 +3,7 @@ package br.gov.seplag.musicapi.api.v1;
 import br.gov.seplag.musicapi.api.v1.dto.AlbumRequest;
 import br.gov.seplag.musicapi.api.v1.dto.AlbumResponse;
 import br.gov.seplag.musicapi.api.v1.dto.CapaUrlResponse;
+import br.gov.seplag.musicapi.api.v1.dto.CapaUrlsResponse;
 import br.gov.seplag.musicapi.service.AlbumService;
 import br.gov.seplag.musicapi.service.CapaAlbumService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -73,18 +74,35 @@ public class AlbumController {
 
 	@PostMapping(value = "/{id}/capa", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@ResponseStatus(HttpStatus.CREATED)
-	@Operation(summary = "Enviar capa do álbum", description = "Faz upload da imagem de capa do álbum (MinIO).")
-	public void enviarCapa(@PathVariable Long id, @RequestPart("arquivo") MultipartFile arquivo) {
+	@Operation(summary = "Enviar capa do álbum", description = "Faz upload de uma ou mais imagens de capa do álbum (MinIO).")
+	public void enviarCapa(
+		@PathVariable Long id,
+		@RequestPart(value = "arquivo", required = false) MultipartFile arquivo,
+		@RequestPart(value = "arquivos", required = false) MultipartFile[] arquivos
+	) {
+		if (arquivos != null && arquivos.length > 0) {
+			capaAlbumService.enviar(id, arquivos);
+			return;
+		}
 		capaAlbumService.enviar(id, arquivo);
 	}
 
 	@GetMapping("/{id}/capa/url")
 	@Operation(
 		summary = "Obter URL pré-assinada da capa",
-		description = "Gera um link pré-assinado com expiração para baixar a capa do álbum."
+		description = "Gera um link pré-assinado com expiração para baixar a última capa enviada do álbum."
 	)
 	public CapaUrlResponse obterUrlCapa(@PathVariable Long id) {
 		return new CapaUrlResponse(capaAlbumService.gerarUrlPorAlbumId(id));
+	}
+
+	@GetMapping("/{id}/capa/urls")
+	@Operation(
+		summary = "Obter URLs pré-assinadas das capas",
+		description = "Gera links pré-assinados com expiração para baixar as capas do álbum."
+	)
+	public CapaUrlsResponse obterUrlsCapas(@PathVariable Long id) {
+		return new CapaUrlsResponse(capaAlbumService.gerarUrlsPorAlbumId(id));
 	}
 }
 

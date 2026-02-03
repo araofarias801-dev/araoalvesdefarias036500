@@ -11,6 +11,8 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.http.Method;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -42,49 +44,57 @@ public class CapaAlbumService {
 
 	@Transactional
 	public void enviar(Long albumId, MultipartFile arquivo) {
+		enviar(albumId, arquivo == null ? null : new MultipartFile[] { arquivo });
+	}
+
+	@Transactional
+	public void enviar(Long albumId, MultipartFile[] arquivos) {
 		if (!albumRepository.existsById(albumId)) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "álbum não encontrado");
 		}
 
-		if (arquivo == null || arquivo.isEmpty()) {
+		if (arquivos == null || arquivos.length == 0) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "arquivo é obrigatório");
 		}
 
-		String contentType = Optional.ofNullable(arquivo.getContentType()).map(String::trim).orElse(null);
-		String extensao = mapearExtensao(contentType);
-		if (extensao == null) {
-			throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "tipo de arquivo não suportado");
-		}
-
-		String objeto = "albuns/" + albumId + "/capa-" + UUID.randomUUID() + "." + extensao;
-
-		try (InputStream inputStream = arquivo.getInputStream()) {
+		try {
 			garantirBucket();
 
-			Optional<CapaAlbum> existenteOpt = capaAlbumRepository.findByAlbumId(albumId);
-			if (existenteOpt.isPresent()) {
-				CapaAlbum existente = existenteOpt.get();
-				removerObjeto(existente.getBucket(), existente.getObjeto());
+			for (MultipartFile arquivo : arquivos) {
+				if (arquivo == null || arquivo.isEmpty()) {
+					throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "arquivo é obrigatório");
+				}
+
+				String contentType = Optional.ofNullable(arquivo.getContentType()).map(String::trim).orElse(null);
+				String extensao = mapearExtensao(contentType);
+				if (extensao == null) {
+					throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "tipo de arquivo não suportado");
+				}
+
+				String objeto = "albuns/" + albumId + "/capa-" + UUID.randomUUID() + "." + extensao;
+				try (InputStream inputStream = arquivo.getInputStream()) {
+					var resposta = minioClient.putObject(
+						PutObjectArgs.builder()
+							.bucket(bucket)
+							.object(objeto)
+							.stream(inputStream, arquivo.getSize(), -1)
+							.contentType(contentType)
+							.build()
+					);
+
+					CapaAlbum capa = new CapaAlbum();
+					capa.setAlbumId(albumId);
+					capa.setBucket(bucket);
+					capa.setObjeto(objeto);
+					capa.setContentType(contentType);
+					capa.setTamanho(arquivo.getSize());
+					capa.setEtag(resposta.etag());
+					capa.setNomeOriginal(arquivo.getOriginalFilename());
+					capaAlbumRepository.save(capa);
+				}
 			}
-
-			var resposta = minioClient.putObject(
-				PutObjectArgs.builder()
-					.bucket(bucket)
-					.object(objeto)
-					.stream(inputStream, arquivo.getSize(), -1)
-					.contentType(contentType)
-					.build()
-			);
-
-			CapaAlbum capa = existenteOpt.orElseGet(CapaAlbum::new);
-			capa.setAlbumId(albumId);
-			capa.setBucket(bucket);
-			capa.setObjeto(objeto);
-			capa.setContentType(contentType);
-			capa.setTamanho(arquivo.getSize());
-			capa.setEtag(resposta.etag());
-			capa.setNomeOriginal(arquivo.getOriginalFilename());
-			capaAlbumRepository.save(capa);
+		} catch (ResponseStatusException ex) {
+			throw ex;
 		} catch (Exception ex) {
 			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "falha ao enviar capa do álbum", ex);
 		}
@@ -96,7 +106,7 @@ public class CapaAlbumService {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "álbum não encontrado");
 		}
 
-		CapaAlbum capa = capaAlbumRepository.findByAlbumId(albumId)
+		CapaAlbum capa = capaAlbumRepository.findTopByAlbumIdOrderByIdDesc(albumId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "capa não encontrada"));
 
 		try {
@@ -108,6 +118,35 @@ public class CapaAlbumService {
 					.expiry(30, TimeUnit.MINUTES)
 					.build()
 			);
+		} catch (Exception ex) {
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "falha ao gerar url da capa", ex);
+		}
+	}
+
+	@Transactional(readOnly = true)
+	public List<String> gerarUrlsPorAlbumId(Long albumId) {
+		if (!albumRepository.existsById(albumId)) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "álbum não encontrado");
+		}
+
+		List<CapaAlbum> capas = capaAlbumRepository.findAllByAlbumIdOrderByIdDesc(albumId);
+		if (capas.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "capa não encontrada");
+		}
+
+		try {
+			List<String> urls = new ArrayList<>(capas.size());
+			for (CapaAlbum capa : capas) {
+				urls.add(minioClient.getPresignedObjectUrl(
+					GetPresignedObjectUrlArgs.builder()
+						.method(Method.GET)
+						.bucket(capa.getBucket())
+						.object(capa.getObjeto())
+						.expiry(30, TimeUnit.MINUTES)
+						.build()
+				));
+			}
+			return urls;
 		} catch (Exception ex) {
 			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "falha ao gerar url da capa", ex);
 		}

@@ -14,6 +14,7 @@ import br.gov.seplag.musicapi.repository.CapaAlbumRepository;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,30 +78,18 @@ class CapaAlbumServiceUnitTests {
 	}
 
 	@Test
-	void enviarCriaOuAtualizaCapaESalvaNoRepositorio() throws Exception {
+	void enviarCriaCapaESalvaNoRepositorio() throws Exception {
 		when(albumRepository.existsById(10L)).thenReturn(true);
 		when(minioClient.bucketExists(any())).thenReturn(false);
 		ObjectWriteResponse objectWriteResponse = org.mockito.Mockito.mock(ObjectWriteResponse.class);
 		when(objectWriteResponse.etag()).thenReturn("etag");
 		when(minioClient.putObject(any())).thenReturn(objectWriteResponse);
-
-		CapaAlbum existente = new CapaAlbum();
-		existente.setId(1L);
-		existente.setAlbumId(10L);
-		existente.setBucket("bucket-test");
-		existente.setObjeto("old");
-		existente.setContentType("image/png");
-		existente.setTamanho(1L);
-		existente.setEtag("old-etag");
-		existente.setNomeOriginal("old.png");
-
-		when(capaAlbumRepository.findByAlbumId(10L)).thenReturn(Optional.of(existente));
 		when(capaAlbumRepository.save(any(CapaAlbum.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
 		capaAlbumService.enviar(10L, arquivo("image/png", "abc".getBytes(StandardCharsets.UTF_8)));
 
 		verify(minioClient).makeBucket(any());
-		verify(minioClient).removeObject(any());
+		verify(minioClient, never()).removeObject(any());
 		ArgumentCaptor<CapaAlbum> captor = ArgumentCaptor.forClass(CapaAlbum.class);
 		verify(capaAlbumRepository).save(captor.capture());
 		assertThat(captor.getValue().getAlbumId()).isEqualTo(10L);
@@ -116,7 +105,7 @@ class CapaAlbumServiceUnitTests {
 	@Test
 	void gerarUrlQuandoNaoExisteCapaRetorna404() {
 		when(albumRepository.existsById(anyLong())).thenReturn(true);
-		when(capaAlbumRepository.findByAlbumId(anyLong())).thenReturn(Optional.empty());
+		when(capaAlbumRepository.findTopByAlbumIdOrderByIdDesc(anyLong())).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> capaAlbumService.gerarUrlPorAlbumId(1L))
 			.isInstanceOfSatisfying(ResponseStatusException.class, ex -> {
@@ -132,7 +121,7 @@ class CapaAlbumServiceUnitTests {
 		capa.setAlbumId(1L);
 		capa.setBucket("bucket-1");
 		capa.setObjeto("o1");
-		when(capaAlbumRepository.findByAlbumId(1L)).thenReturn(Optional.of(capa));
+		when(capaAlbumRepository.findTopByAlbumIdOrderByIdDesc(1L)).thenReturn(Optional.of(capa));
 		when(minioClient.getPresignedObjectUrl(any())).thenReturn("http://url");
 
 		String url = capaAlbumService.gerarUrlPorAlbumId(1L);
@@ -147,7 +136,7 @@ class CapaAlbumServiceUnitTests {
 		capa.setAlbumId(1L);
 		capa.setBucket("bucket-1");
 		capa.setObjeto("o1");
-		when(capaAlbumRepository.findByAlbumId(1L)).thenReturn(Optional.of(capa));
+		when(capaAlbumRepository.findTopByAlbumIdOrderByIdDesc(1L)).thenReturn(Optional.of(capa));
 		when(minioClient.getPresignedObjectUrl(any())).thenThrow(new RuntimeException("falha"));
 
 		assertThatThrownBy(() -> capaAlbumService.gerarUrlPorAlbumId(1L))
@@ -155,6 +144,26 @@ class CapaAlbumServiceUnitTests {
 				assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
 				assertThat(ex.getReason()).isEqualTo("falha ao gerar url da capa");
 			});
+	}
+
+	@Test
+	void gerarUrlsRetornaListaDePresignedUrls() throws Exception {
+		when(albumRepository.existsById(anyLong())).thenReturn(true);
+		CapaAlbum capa1 = new CapaAlbum();
+		capa1.setAlbumId(1L);
+		capa1.setBucket("bucket-1");
+		capa1.setObjeto("o1");
+		CapaAlbum capa2 = new CapaAlbum();
+		capa2.setAlbumId(1L);
+		capa2.setBucket("bucket-1");
+		capa2.setObjeto("o2");
+
+		when(capaAlbumRepository.findAllByAlbumIdOrderByIdDesc(1L)).thenReturn(List.of(capa2, capa1));
+		when(minioClient.getPresignedObjectUrl(any())).thenReturn("http://url");
+
+		List<String> urls = capaAlbumService.gerarUrlsPorAlbumId(1L);
+
+		assertThat(urls).containsExactly("http://url", "http://url");
 	}
 
 	private static MockMultipartFile arquivo(String contentType, byte[] bytes) {
