@@ -113,8 +113,9 @@ Para testar endpoints protegidos no Swagger:
   - `PUT http://localhost:8080/v1/albuns/{id}`
   - `GET http://localhost:8080/v1/albuns/{id}`
   - `GET http://localhost:8080/v1/albuns?titulo=Post&artistaNome=Mike&artistaId=1&ordem=asc&pagina=0&tamanho=20`
-  - `POST http://localhost:8080/v1/albuns/{id}/capa` (multipart, campo `arquivo`)
+  - `POST http://localhost:8080/v1/albuns/{id}/capa` (multipart, campo `arquivo` ou `arquivos`)
   - `GET http://localhost:8080/v1/albuns/{id}/capa/url`
+  - `GET http://localhost:8080/v1/albuns/{id}/capa/urls`
 - Regionais:
   - `POST http://localhost:8080/v1/regionais/sincronizar`
   - `GET http://localhost:8080/v1/regionais?ativo=true&nome=Regional`
@@ -212,6 +213,7 @@ src/main/java
     │           ├── ArtistaResumoResponse.java
     │           ├── CadastroUsuarioRequest.java
     │           ├── CapaUrlResponse.java
+    │           ├── CapaUrlsResponse.java
     │           ├── LoginRequest.java
     │           ├── RegionalResponse.java
     │           ├── RenovarTokenRequest.java
@@ -254,7 +256,9 @@ src/main/resources
     │   ├── V1__criar_schema_inicial.sql
     │   ├── V2__criar_tabelas_usuario_e_refresh_token.sql
     │   ├── V3__criar_tabela_album_capa.sql
-    │   └── V4__criar_tabela_regional.sql
+    │   ├── V4__criar_tabela_regional.sql
+    │   ├── V6__popular_dados_iniciais.sql
+    │   └── V7__permitir_multiplas_capas_por_album.sql
     ├── h2
     │   └── V5__corrigir_tipo_titulo_album.sql
     └── postgresql
