@@ -73,12 +73,13 @@ API REST desenvolvida em Java (Spring Boot) para cadastro e consulta de artistas
 
 ## 🧱 Como executar o projeto
 
-### 1. Subir dependências (Postgres + MinIO + Adminer)
+### 1. Deploy com Docker (API + Postgres + MinIO + Adminer)
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
+- API: `http://localhost:8080`
 - Postgres: `localhost:5432`
 - MinIO API: `http://localhost:9000`
 - MinIO Console: `http://localhost:9001`
@@ -89,7 +90,27 @@ docker compose up -d
   - Password: `postgres`
   - Database: `musicapi`
 
-### 2. Subir a aplicação
+O `docker-compose.yml` já define as variáveis de ambiente necessárias (DB, MinIO, JWT e CORS). Para um deploy real, ajuste principalmente:
+
+- `JWT_SECRET` (obrigatório ter 32+ caracteres)
+- `CORS_ALLOWED_ORIGINS` (domínios permitidos para chamadas HTTP e WebSocket)
+- credenciais do Postgres/MinIO (se necessário)
+
+Comandos úteis:
+
+```bash
+docker compose ps
+docker compose logs -f api
+docker compose down
+docker compose down -v
+```
+
+Validação rápida:
+
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- Health: `http://localhost:8080/actuator/health`
+
+### 2. Subir a aplicação localmente (sem Docker)
 
 ```bash
 mvn spring-boot:run
@@ -97,7 +118,7 @@ mvn spring-boot:run
 
 A aplicação sobe por padrão em `http://localhost:8080`.
 
-Configurações via variáveis de ambiente (opcionais):
+Configurações via variáveis de ambiente (opcionais), quando rodando local:
 
 ```bash
 JWT_SECRET=uma-chave-com-mais-de-32-caracteres
