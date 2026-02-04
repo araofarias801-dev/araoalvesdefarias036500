@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest(properties = "app.ratelimit.enabled=false")
+@SpringBootTest(properties = { "app.ratelimit.enabled=false", "spring.profiles.active=local" })
 @AutoConfigureMockMvc
 @Transactional
 class AutenticacaoControllerTests {

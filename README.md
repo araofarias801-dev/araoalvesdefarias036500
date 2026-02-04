@@ -49,6 +49,18 @@ API REST desenvolvida em Java (Spring Boot) para cadastro e consulta de artistas
   - Relacionamento Artista–Álbum N:N via tabela `artista_album`
   - Migrações com Flyway, separadas em `common` + específicas por banco (`h2` / `postgresql`)
   - Carga inicial via migration (`V6__popular_dados_iniciais.sql`)
+  - Tipo de artista:
+    - Campo `artista.tipo` (enum: `CANTOR` | `BANDA`)
+    - Na criação, se o campo não for informado, o padrão é `CANTOR`
+    - Migration `V8__adicionar_tipo_artista.sql` adiciona a coluna e ajusta dados iniciais
+- Tratamento de exceções:
+  - Handler global em `ApiExceptionHandler` usando `@RestControllerAdvice`
+  - Erros retornam JSON padronizado: `timestamp`, `status`, `error`, `message`, `path`
+  - Mapeamentos principais:
+    - `ResponseStatusException` respeita o status e a mensagem definidos na regra
+    - `NoSuchElementException` retorna 404 (`recurso não encontrado`)
+    - `DataIntegrityViolationException` retorna 409 (`conflito de dados`)
+    - Qualquer outro erro retorna 500 (`erro interno`) e é logado com stack trace
 - Segurança:
   - Endpoints versionados em `/v1/**`
   - JWT com expiração curta (access token) e renovação via refresh token persistido
@@ -62,7 +74,7 @@ API REST desenvolvida em Java (Spring Boot) para cadastro e consulta de artistas
     - `GET /v1/albuns/{id}/capa/url` (capa mais recente)
     - `GET /v1/albuns/{id}/capa/urls` (todas as capas do álbum)
 - WebSocket:
-  - STOMP em `/ws`, tópico `/topic/albuns` notificado a cada novo álbum criado
+  - STOMP em `/ws` e `/ws-native`, tópico `/topic/albuns` notificado a cada novo álbum criado
 - Rate limit:
   - Limite por usuário configurável (`app.ratelimit.*`), padrão 10 requisições/minuto
 - Regionais (integrador):
@@ -181,7 +193,10 @@ Para testar endpoints protegidos no Swagger:
   - `POST http://localhost:8080/v1/albuns`
   - `PUT http://localhost:8080/v1/albuns/{id}`
   - `GET http://localhost:8080/v1/albuns/{id}`
-  - `GET http://localhost:8080/v1/albuns?titulo=Post&artistaNome=Mike&artistaId=1&ordem=asc&pagina=0&tamanho=20`
+  - `GET http://localhost:8080/v1/albuns?titulo=Post&artistaNome=Mike&artistaId=1&temCantor=true&temBanda=false&ordem=asc&pagina=0&tamanho=20`
+    - Filtros adicionais:
+      - `temCantor=true` retorna álbuns que tenham ao menos 1 artista do tipo `CANTOR`
+      - `temBanda=true` retorna álbuns que tenham ao menos 1 artista do tipo `BANDA`
   - `POST http://localhost:8080/v1/albuns/{id}/capa` (multipart, campo `arquivo` ou `arquivos`)
   - `GET http://localhost:8080/v1/albuns/{id}/capa/url`
   - `GET http://localhost:8080/v1/albuns/{id}/capa/urls`
@@ -190,6 +205,7 @@ Para testar endpoints protegidos no Swagger:
   - `GET http://localhost:8080/v1/regionais?ativo=true&nome=Regional`
 - WebSocket:
   - Endpoint STOMP: `/ws`
+  - Endpoint STOMP (sem SockJS): `/ws-native`
   - Tópico: `/topic/albuns` (notifica a cada novo álbum cadastrado)
 
 Os endpoints `/v1/**` exigem `Authorization: Bearer <accessToken>`.
@@ -268,6 +284,7 @@ mvn -DskipTests verify
 src/main/java
 └── br/gov/seplag/musicapi
     ├── api
+    │   ├── ApiExceptionHandler.java
     │   ├── PingController.java
     │   └── v1
     │       ├── AutenticacaoController.java
@@ -297,6 +314,7 @@ src/main/java
     ├── domain
     │   ├── Album.java
     │   ├── Artista.java
+    │   ├── ArtistaTipo.java
     │   ├── CapaAlbum.java
     │   ├── RefreshToken.java
     │   ├── Regional.java
@@ -327,7 +345,8 @@ src/main/resources
     │   ├── V3__criar_tabela_album_capa.sql
     │   ├── V4__criar_tabela_regional.sql
     │   ├── V6__popular_dados_iniciais.sql
-    │   └── V7__permitir_multiplas_capas_por_album.sql
+    │   ├── V7__permitir_multiplas_capas_por_album.sql
+    │   └── V8__adicionar_tipo_artista.sql
     ├── h2
     │   └── V5__corrigir_tipo_titulo_album.sql
     └── postgresql

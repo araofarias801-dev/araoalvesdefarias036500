@@ -112,6 +112,8 @@ public class AlbumService {
 		String titulo,
 		String artistaNome,
 		Long artistaId,
+		Boolean temCantor,
+		Boolean temBanda,
 		String ordem,
 		int pagina,
 		int tamanho
@@ -122,7 +124,8 @@ public class AlbumService {
 		String tituloParam = Optional.ofNullable(normalizarFiltro(titulo)).orElse("");
 		String artistaNomeParam = Optional.ofNullable(normalizarFiltro(artistaNome)).orElse("");
 
-		return albumRepository.buscar(tituloParam, artistaNomeParam, artistaId, pageable).map(this::toResponse);
+		return albumRepository.buscar(tituloParam, artistaNomeParam, artistaId, temCantor, temBanda, pageable)
+			.map(this::toResponse);
 	}
 
 	private Direction parseDirection(String ordem) {

@@ -15,7 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties = "app.ratelimit.enabled=false")
+@SpringBootTest(properties = { "app.ratelimit.enabled=false", "spring.profiles.active=local" })
 @AutoConfigureMockMvc
 class ArtistaControllerTests {
 	@Autowired

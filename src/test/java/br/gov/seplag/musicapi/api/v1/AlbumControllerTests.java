@@ -27,7 +27,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties = "app.ratelimit.enabled=false")
+@SpringBootTest(properties = { "app.ratelimit.enabled=false", "spring.profiles.active=local" })
 @AutoConfigureMockMvc
 class AlbumControllerTests {
 	@Autowired
@@ -160,6 +160,55 @@ class AlbumControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.content.length()").value(1))
 			.andExpect(jsonPath("$.content[0].titulo").value("Post Traumatic"));
+	}
+
+	@Test
+	void filtraAlbunsPorTipoDeArtista() throws Exception {
+		mockMvc.perform(post("/v1/artistas")
+				.with(jwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nome\":\"Guns N' Roses\",\"tipo\":\"BANDA\"}"))
+			.andExpect(status().isCreated());
+
+		mockMvc.perform(post("/v1/artistas")
+				.with(jwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nome\":\"Serj Tankian\",\"tipo\":\"CANTOR\"}"))
+			.andExpect(status().isCreated());
+
+		Long bandaId = artistaRepository.findAll().stream()
+			.filter(a -> "Guns N' Roses".equals(a.getNome()))
+			.findFirst()
+			.orElseThrow()
+			.getId();
+
+		Long cantorId = artistaRepository.findAll().stream()
+			.filter(a -> "Serj Tankian".equals(a.getNome()))
+			.findFirst()
+			.orElseThrow()
+			.getId();
+
+		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"titulo\":\"Album Banda\",\"artistaIds\":[" + bandaId + "]}"))
+			.andExpect(status().isCreated());
+
+		mockMvc.perform(post("/v1/albuns")
+				.with(jwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"titulo\":\"Album Cantor\",\"artistaIds\":[" + cantorId + "]}"))
+			.andExpect(status().isCreated());
+
+		mockMvc.perform(get("/v1/albuns").with(jwt()).param("temBanda", "true"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(1))
+			.andExpect(jsonPath("$.content[0].titulo").value("Album Banda"));
+
+		mockMvc.perform(get("/v1/albuns").with(jwt()).param("temCantor", "true"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(1))
+			.andExpect(jsonPath("$.content[0].titulo").value("Album Cantor"));
 	}
 
 	@Test

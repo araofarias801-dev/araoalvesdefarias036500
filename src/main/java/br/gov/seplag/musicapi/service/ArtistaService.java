@@ -3,6 +3,7 @@ package br.gov.seplag.musicapi.service;
 import br.gov.seplag.musicapi.api.v1.dto.ArtistaRequest;
 import br.gov.seplag.musicapi.api.v1.dto.ArtistaResponse;
 import br.gov.seplag.musicapi.domain.Artista;
+import br.gov.seplag.musicapi.domain.ArtistaTipo;
 import br.gov.seplag.musicapi.repository.ArtistaRepository;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,7 @@ public class ArtistaService {
 	public ArtistaResponse criar(ArtistaRequest request) {
 		Artista artista = new Artista();
 		artista.setNome(normalizarNome(request));
+		artista.setTipo(normalizarTipoParaCriacao(request));
 		artista = artistaRepository.save(artista);
 		return toResponse(artista);
 	}
@@ -33,6 +35,9 @@ public class ArtistaService {
 	public ArtistaResponse atualizar(Long id, ArtistaRequest request) {
 		Artista artista = artistaRepository.findById(id).orElseThrow();
 		artista.setNome(normalizarNome(request));
+		if (request != null && request.getTipo() != null) {
+			artista.setTipo(request.getTipo());
+		}
 		artista = artistaRepository.save(artista);
 		return toResponse(artista);
 	}
@@ -75,7 +80,14 @@ public class ArtistaService {
 		return request.getNome().trim();
 	}
 
+	private ArtistaTipo normalizarTipoParaCriacao(ArtistaRequest request) {
+		if (request == null || request.getTipo() == null) {
+			return ArtistaTipo.CANTOR;
+		}
+		return request.getTipo();
+	}
+
 	private ArtistaResponse toResponse(Artista artista) {
-		return new ArtistaResponse(artista.getId(), artista.getNome());
+		return new ArtistaResponse(artista.getId(), artista.getNome(), artista.getTipo());
 	}
 }

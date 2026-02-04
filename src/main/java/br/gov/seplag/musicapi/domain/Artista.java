@@ -2,6 +2,8 @@ package br.gov.seplag.musicapi.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -21,6 +23,10 @@ public class Artista {
 
 	@Column(name = "nome", nullable = false, length = 200)
 	private String nome;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "tipo", nullable = false, length = 20)
+	private ArtistaTipo tipo;
 
 	@ManyToMany
 	@JoinTable(
@@ -44,6 +50,14 @@ public class Artista {
 
 	public void setNome(String nome) {
 		this.nome = nome;
+	}
+
+	public ArtistaTipo getTipo() {
+		return tipo;
+	}
+
+	public void setTipo(ArtistaTipo tipo) {
+		this.tipo = tipo;
 	}
 
 	public Set<Album> getAlbuns() {

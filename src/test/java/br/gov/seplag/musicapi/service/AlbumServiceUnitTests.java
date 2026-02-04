@@ -107,14 +107,15 @@ class AlbumServiceUnitTests {
 
 	@Test
 	void listarNormalizaFiltrosParaVazioEOrdenaPorTitulo() {
-		when(albumRepository.buscar(eq("x"), eq("y"), eq(null), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(
-			albumComArtistas(1L, "t1", List.of())
-		)));
+		when(albumRepository.buscar(eq("x"), eq("y"), eq(null), eq(null), eq(null), any(Pageable.class)))
+			.thenReturn(new PageImpl<>(List.of(
+				albumComArtistas(1L, "t1", List.of())
+			)));
 
-		albumService.listar(" x ", " y ", null, "desc", 2, 20);
+		albumService.listar(" x ", " y ", null, null, null, "desc", 2, 20);
 
 		ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-		verify(albumRepository).buscar(eq("x"), eq("y"), eq(null), captor.capture());
+		verify(albumRepository).buscar(eq("x"), eq("y"), eq(null), eq(null), eq(null), captor.capture());
 		Direction direction = captor.getValue().getSort().getOrderFor("titulo").getDirection();
 		assertThat(direction).isEqualTo(Direction.DESC);
 		assertThat(captor.getValue().getPageNumber()).isEqualTo(2);

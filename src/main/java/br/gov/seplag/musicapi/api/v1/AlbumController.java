@@ -65,11 +65,13 @@ public class AlbumController {
 		@RequestParam(name = "titulo", required = false) String titulo,
 		@RequestParam(name = "artistaNome", required = false) String artistaNome,
 		@RequestParam(name = "artistaId", required = false) Long artistaId,
+		@RequestParam(name = "temCantor", required = false) Boolean temCantor,
+		@RequestParam(name = "temBanda", required = false) Boolean temBanda,
 		@RequestParam(name = "ordem", required = false) String ordem,
 		@RequestParam(name = "pagina", defaultValue = "0") int pagina,
 		@RequestParam(name = "tamanho", defaultValue = "20") int tamanho
 	) {
-		return albumService.listar(titulo, artistaNome, artistaId, ordem, pagina, tamanho);
+		return albumService.listar(titulo, artistaNome, artistaId, temCantor, temBanda, ordem, pagina, tamanho);
 	}
 
 	@PostMapping(value = "/{id}/capa", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
