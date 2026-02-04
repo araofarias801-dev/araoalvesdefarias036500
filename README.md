@@ -27,6 +27,7 @@ API REST desenvolvida em Java (Spring Boot) para cadastro e consulta de artistas
 - Spring WebSocket (STOMP)
 - Spring Security (JWT + Refresh Token)
 - Spring Boot Actuator (Health / Liveness / Readiness)
+- Spring Scheduling (@Scheduled)
 - Spring Data JPA
 - Spring Cloud OpenFeign
 - Flyway Migrations
@@ -80,7 +81,7 @@ API REST desenvolvida em Java (Spring Boot) para cadastro e consulta de artistas
 - Regionais (integrador):
   - Importação e sincronização a partir do endpoint do integrador via OpenFeign
   - Versionamento simples de alteração: inativa registro antigo e cria novo
-  - Sincronização agendada (opcional): `app.regionais.sync.enabled` (padrão `false`) e `app.regionais.sync.cron` (padrão `0 */30 * * * *`)
+  - Sincronização agendada de 30 em 30 minutos(opcional): `app.regionais.sync.enabled` (padrão `false`) e `app.regionais.sync.cron` (padrão `0 */30 * * * *`)
 
 ---
 
