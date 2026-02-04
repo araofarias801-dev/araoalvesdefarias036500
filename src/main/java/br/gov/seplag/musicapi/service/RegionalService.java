@@ -10,19 +10,57 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class RegionalService {
+	private static final Logger logger = LoggerFactory.getLogger(RegionalService.class);
+
 	private final RegionalRepository regionalRepository;
 	private final RegionaisIntegradorClient regionaisIntegradorClient;
+
+	@Value("${app.regionais.sync.enabled:false}")
+	private boolean sincronizacaoAgendadaHabilitada;
 
 	public RegionalService(RegionalRepository regionalRepository, RegionaisIntegradorClient regionaisIntegradorClient) {
 		this.regionalRepository = regionalRepository;
 		this.regionaisIntegradorClient = regionaisIntegradorClient;
+	}
+
+	@EventListener(ApplicationReadyEvent.class)
+	public void sincronizarAoIniciar() {
+		executarSincronizacao("inicialização");
+	}
+
+	@Scheduled(cron = "${app.regionais.sync.cron:0 */30 * * * *}")
+	public void sincronizarAgendado() {
+		executarSincronizacao("agendada");
+	}
+
+	private void executarSincronizacao(String origem) {
+		if (!sincronizacaoAgendadaHabilitada) {
+			return;
+		}
+		try {
+			SincronizarRegionaisResponse response = sincronizar();
+			logger.info(
+				"Sincronização {} de regionais concluída: inseridos={}, inativados={}",
+				origem,
+				response.getInseridos(),
+				response.getInativados()
+			);
+		} catch (Exception ex) {
+			logger.warn("Falha na sincronização {} de regionais", origem, ex);
+		}
 	}
 
 	@Transactional(readOnly = true)

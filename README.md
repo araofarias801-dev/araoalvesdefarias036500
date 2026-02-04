@@ -80,6 +80,40 @@ API REST desenvolvida em Java (Spring Boot) para cadastro e consulta de artistas
 - Regionais (integrador):
   - Importação e sincronização a partir do endpoint do integrador via OpenFeign
   - Versionamento simples de alteração: inativa registro antigo e cria novo
+  - Sincronização agendada (opcional): `app.regionais.sync.enabled` (padrão `false`) e `app.regionais.sync.cron` (padrão `0 */30 * * * *`)
+
+---
+
+## 📋 Requisitos da prova (checklist)
+
+Baseado no enunciado em `prova.txt`.
+
+### Requisitos gerais
+
+- [x] Segurança (CORS): bloquear acesso a partir de domínios fora do permitido (`CORS_ALLOWED_ORIGINS`) — Onde: `application.yml`, `SegurancaConfig.java`, `WebSocketConfig.java`
+- [x] Autenticação JWT com expiração (5 min) e renovação (refresh token) — Onde: `application.yml`, `AutenticacaoController.java`, `AutenticacaoService.java`, `RefreshToken.java`
+- [x] Implementar POST, PUT, GET — Onde: `ArtistaController.java`, `AlbumController.java`, `RegionalController.java`
+- [x] Paginação na consulta dos álbuns — Onde: `AlbumController.java`, `AlbumService.java`
+- [x] Expor álbuns que são/tem cantores e/ou bandas (consultas parametrizadas) — Onde: `AlbumRepository.java`, `ArtistaTipo.java`, `V8__adicionar_tipo_artista.sql`
+- [x] Consulta por nome do artista com ordenação alfabética (asc/desc) — Onde: `ArtistaController.java`, `ArtistaService.java`
+- [x] Upload de uma ou mais imagens de capa do álbum — Onde: `AlbumController.java`, `CapaAlbumService.java`
+- [x] Armazenamento das imagens no MinIO (API S3) — Onde: `MinioConfig.java`, `CapaAlbumService.java`
+- [x] Recuperação por links pré-assinados com expiração de 30 minutos — Onde: `CapaAlbumService.java`
+- [x] Versionar endpoints (`/v1/**`) — Onde: controllers (pasta `api/v1`)
+- [x] Flyway Migrations para criar e popular tabelas — Onde: `common/`, `postgresql/`, `h2/` (pasta `db/migration`)
+- [x] Documentar endpoints com OpenAPI/Swagger — Onde: `application.yml`, `MusicApiApplication.java`, `SegurancaConfig.java`
+
+### Requisitos sênior
+
+- [x] Health checks e liveness/readiness (Spring Boot Actuator) — Onde: `application.yml`, `SegurancaConfig.java`, `ActuatorHealthTests.java`
+- [x] Testes unitários — Onde: pasta `src/test/java`
+- [x] WebSocket para notificar o front a cada novo álbum cadastrado — Onde: `WebSocketConfig.java`, `AlbumService.java`
+- [x] Rate limit: até 10 requisições por minuto por usuário — Onde: `RateLimitFilter.java`, `application.yml`, `SegurancaConfig.java`
+- [x] Endpoint de regionais: importar, marcar ativo/inativo e sincronizar alterações — Onde: `RegionalController.java`, `RegionalService.java`, `RegionaisIntegradorClient.java`, `Regional.java`
+
+### Observação sobre “bloquear domínios”
+
+O bloqueio por domínio foi implementado via CORS (controle de origem no navegador). Em chamadas server-to-server (sem header `Origin`), o CORS não se aplica; caso o avaliador exija bloqueio também nesse cenário, seria necessário um controle adicional no backend (ex.: validação explícita de host/origin, gateway/reverse-proxy, etc.).
 
 ---
 
@@ -140,6 +174,8 @@ MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_BUCKET=musicapi
 APP_INTEGRADOR_REGIONAIS_URL=https://integrador-argus-api.geia.vip/v1/regionais
+APP_REGIONAIS_SYNC_ENABLED=true
+APP_REGIONAIS_SYNC_CRON=0 */30 * * * *
 ```
 
 ### 3. Banco de dados (perfis)

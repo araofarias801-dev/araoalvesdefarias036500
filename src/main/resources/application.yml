@@ -31,6 +31,10 @@ app:
   ratelimit:
     enabled: true
     requests-per-minute: 10
+  regionais:
+    sync:
+      enabled: true
+      cron: "0 */30 * * * *"
 
 springdoc:
   swagger-ui:
